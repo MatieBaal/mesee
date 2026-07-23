@@ -86,7 +86,7 @@ static void x11_cleanup(void) {
 
 // Экспортируемая структура API
 static MESEEBackendAPI g_x11_api = {
-    .name = "X11 Backend (Stub)",
+    .name = "MESEE X11 Backend v0.1",
     .init = x11_init,
     .get_cursor_pos = x11_get_cursor_pos,
     .get_pixels = x11_get_pixels,
