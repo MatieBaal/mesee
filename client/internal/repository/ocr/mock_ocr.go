@@ -3,7 +3,7 @@ package ocr
 import (
 	"context"
 	"image"
-	"mesee/internal/domain"
+	"client/internal/domain"
 )
 
 type MockOCR struct{}

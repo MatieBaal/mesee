@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"mesee/internal/domain"
+	"client/internal/domain"
 
 	"github.com/kbinani/screenshot"
 )

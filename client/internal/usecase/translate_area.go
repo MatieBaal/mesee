@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"mesee/internal/domain"
+	"client/internal/domain"
 )
 
 type TranslationUseCase struct {
