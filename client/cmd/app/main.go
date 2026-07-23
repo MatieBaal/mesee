@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"mesee/internal/domain"
-	"mesee/internal/repository/ocr"
-	"mesee/internal/repository/translator"
-	"mesee/internal/usecase"
+	"mesee/client/internal/domain"
+	"mesee/client/internal/repository/ocr"
+	"mesee/client/internal/repository/translator"
+	"mesee/client/internal/usecase"
 )
 
 func main() {
