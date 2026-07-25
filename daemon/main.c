@@ -113,20 +113,22 @@ void handle_client(int client_fd) {
 
         } else if (cmd == 2) { // GetPixels
             MESEERectOffsets offsets;
+            int x = 0, y = 0;
+
+            if (!read_exact(client_fd, &x, sizeof(x))) {
+                break;
+            }
+
+            if (!read_exact(client_fd, &y, sizeof(y))) {
+                break;
+            }
             
             // Дочитываем структуру отступов (8 байт)
             if (!read_exact(client_fd, &offsets, sizeof(offsets))) {
                 break;
             }
 
-            int x = 0, y = 0;
             ResponsePixelHeader res = {0};
-
-            if (!g_api->get_cursor_pos(&x, &y)) {
-                res.status = 1;
-                write_all(client_fd, &res, sizeof(res));
-                continue;
-            }
 
             MESEEPixelBuffer pb = {0};
             if (g_api->get_pixels(x, y, offsets, &pb)) {
