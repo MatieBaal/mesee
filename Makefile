@@ -49,18 +49,18 @@ $(X11_SO): $(X11_OBJS)
 	@mkdir -p $(dir $@)
 	@if [ -n "$(X11_OBJS)" ]; then \
 		$(CC) -shared $(X11_OBJS) -o $@ $(X11_LIBS); \
-		@echo "MESEE | BUILD   | X11 backend built: $@"; \
+		echo "MESEE | BUILD   | X11 backend built: $@"; \
 	else \
-		@echo "MESEE | BUILD   | [!] X11 source files not found, skip building $(X11_SO)"; \
+		echo "MESEE | BUILD   | [!] X11 source files not found, skip building $(X11_SO)"; \
 	fi
 
 $(WAYLAND_SO): $(WAYLAND_OBJS)
 	@mkdir -p $(dir $@)
 	@if [ -n "$(WAYLAND_OBJS)" ]; then \
 		$(CC) -shared $(WAYLAND_OBJS) -o $@ $(WAYLAND_LIBS); \
-		@echo "MESEE | BUILD   | Wayland backend built: $@"; \
+		echo "MESEE | BUILD   | Wayland backend built: $@"; \
 	else \
-		@echo "MESEE | BUILD   | [!] Wayland source files not found, skip building $(WAYLAND_SO)"; \
+		echo "MESEE | BUILD   | [!] Wayland source files not found, skip building $(WAYLAND_SO)"; \
 	fi
 
 $(BUILD_DIR)/daemon/main.o: daemon/main.c
