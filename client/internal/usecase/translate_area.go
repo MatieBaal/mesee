@@ -1,9 +1,9 @@
 package usecase
 
 import (
+	"client/internal/domain"
 	"context"
 	"fmt"
-	"client/internal/domain"
 )
 
 type TranslationUseCase struct {
@@ -40,7 +40,7 @@ func (tuc *TranslationUseCase) ProcessPoint(ctx context.Context, point domain.Po
 		return nil, nil // Текста под курсором нет
 	}
 
-	translated, err := tuc.translator.Translate(ctx, OcrResult.Text, "RU")
+	translated, err := tuc.translator.Translate(ctx, OcrResult.Text)
 	if err != nil {
 		return nil, fmt.Errorf("translation failed:%w", err)
 	}

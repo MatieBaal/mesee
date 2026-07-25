@@ -6,6 +6,7 @@ import (
 )
 
 // Ports
+
 // Порт для снятия фрагмента экрана
 type ScreenCapturer interface {
 	CaptureArea(ctx context.Context, center Point, width int, height int) (image.Image, error)
@@ -18,5 +19,5 @@ type OCREngine interface {
 
 // Порт для перевода текста
 type TranslatorService interface {
-	Translate(ctx context.Context, text string, targetLang string) (string, error)
+	Translate(ctx context.Context, text string) (string, error)
 }
