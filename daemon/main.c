@@ -13,6 +13,9 @@
 
 #define SOCKET_PATH "/tmp/mesee.sock"
 
+#define BACKEND_TYPE_X11     0x01
+#define BACKEND_TYPE_WAYLAND 0x02
+
 #pragma pack(push, 1)
 
 typedef struct {
@@ -33,8 +36,9 @@ typedef struct {
 #pragma pack(pop)
 
 static int g_server_fd = -1;
-static void *g_dl_handle = NULL;
-static MESEEBackendAPI *g_api = NULL;
+static void * g_dl_handle = NULL;
+static MESEEBackendAPI * g_api = NULL;
+static uint8_t g_backend_type = 0;
 
 void cleanup_and_exit
 (
@@ -83,9 +87,11 @@ const char * detect_backend_library
 
     if ((session && strcmp(session, "wayland") == 0) || wayland_display != NULL)
     {
+        g_backend_type = BACKEND_TYPE_WAYLAND;
         return "./libmesee_backend_wayland.so";
     }
 
+    g_backend_type = BACKEND_TYPE_X11;
     return "./libmesee_backend_x11.so";
 }
 
@@ -202,6 +208,13 @@ void handle_client
             {
                 res.status = 1;
                 write_all(client_fd, &res, sizeof(res));
+            }
+        }
+        else if (cmd == 3) // GetBackendType
+        {
+            if (!write_all(client_fd, &g_backend_type, 1))
+            {
+                break;
             }
         }
     }
