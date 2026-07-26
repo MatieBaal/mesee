@@ -39,7 +39,7 @@ typedef struct OutputNode {
 } OutputNode;
 
 typedef struct {
-    struct wl_buffer *buffer;   // Wayland buffer for the screencopy
+    struct wl_buffer * buffer;  // Wayland buffer for the screencopy
     uint8_t * data;             // Pointer to the mapped memory for pixel data
     size_t size;                // Size of the mapped memory
     uint32_t width;             // Width of the captured area
@@ -54,12 +54,12 @@ typedef struct {
 static WaylandCompositorType g_compositor_type = COMPOSITOR_UNKNOWN;
 static char g_hypr_socket_path[sizeof(((struct sockaddr_un *)0)->sun_path)] = {0};
 
-static struct wl_display *g_wl_display = NULL;
-static struct wl_registry *g_wl_registry = NULL;
-static struct wl_shm *g_wl_shm = NULL;
-static struct zwlr_screencopy_manager_v1 *g_screencopy_manager = NULL;
-static struct zxdg_output_manager_v1 *g_xdg_output_manager = NULL;
-static OutputNode *g_output_list = NULL;
+static struct wl_display * g_wl_display = NULL;
+static struct wl_registry * g_wl_registry = NULL;
+static struct wl_shm * g_wl_shm = NULL;
+static struct zwlr_screencopy_manager_v1 * g_screencopy_manager = NULL;
+static struct zxdg_output_manager_v1 * g_xdg_output_manager = NULL;
+static OutputNode * g_output_list = NULL;
 
 static void zxdg_output_handle_logical_position
 (
