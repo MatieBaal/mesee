@@ -20,31 +20,31 @@ import (
 const socketPath = "/tmp/mesee.sock"
 
 func main() {
-	// 1. Инициализация главного потока через mainthread
 	mainthread.Init(run)
 }
 
 func run() {
 	fmt.Println("Запуск mesee в фоновом режиме...")
 
+	// 1. Инициализируем адаптеры (репозитории)
 	daemonClient := daemon.NewDaemonClient(socketPath)
-	screenshoter := ocr.NewScreenshoter()
 	ocrEngine := ocr.NewTesseractCLI("")
 	translatorService := translator.NewGoogleTranslator("")
 
-	appUseCase := usecase.NewTranslationUseCase(screenshoter, ocrEngine, translatorService)
+	// 2. Сборка UseCase (внедрение зависимостей)
+	// daemonClient передается как реализация интерфейса ScreenCapturer!
+	appUseCase := usecase.NewTranslationUseCase(daemonClient, ocrEngine, translatorService)
 
-	// 2. Регистрируем комбинацию: Ctrl + Alt + S
-	// В пакете hotkey модификаторы передаются срезом []hotkey.Modifier
+	// 3. Регистрация хоткея
 	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModShift}, hotkey.KeyS)
-
+	_ = hk.Unregister() // Очистка зомби-регистраций
 	err := hk.Register()
 	if err != nil {
 		log.Fatalf("Ошибка регистрации хоткея: %v", err)
 	}
 	defer hk.Unregister()
 
-	fmt.Println("Готово! Нажмите [Ctrl + Alt + S] для перевода.")
+	fmt.Println("Готово! Нажмите [Ctrl + Shift + S] для перевода.")
 	fmt.Println("Для выхода нажмите Ctrl+C в терминале.")
 
 	sigChan := make(chan os.Signal, 1)
@@ -53,21 +53,17 @@ func run() {
 	for {
 		select {
 		case <-hk.Keydown():
-			fmt.Println("\n[Сработал хоткей] Запрос к C-демону...")
+			fmt.Println("\n[Сработал хоткей] Начинаем процесс перевода...")
 
+			// Контроллер отвечает только за старт бизнес-операции
+			// и передачу ей начальных параметров (например, точки координат).
 			cursorPoint, err := daemonClient.GetCursorPos()
 			if err != nil {
-				fmt.Printf("Ошибка подключения к демону: %v\n", err)
+				fmt.Printf("Ошибка получения координат: %v\n", err)
 				continue
 			}
 
-			outputFile := "build/tests/capture.jpg"
-			_, err = daemonClient.CaptureArea(10, 10, 10, 10, outputFile)
-			if err != nil {
-				fmt.Printf("Ошибка захвата области: %v\n", err)
-				continue
-			}
-
+			// Бизнес-логика (захват, распознавание, перевод) инкапсулирована внутри UseCase
 			ctx := context.Background()
 			result, err := appUseCase.ProcessPoint(ctx, cursorPoint)
 			if err != nil {

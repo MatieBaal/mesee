@@ -1,14 +1,12 @@
 package daemon
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"image"
-	"image/jpeg"
 	"io"
 	"net"
-	"os"
-	"path/filepath"
 
 	"client/internal/domain"
 )
@@ -21,12 +19,16 @@ type ResponseCursor struct {
 	Y      int32
 }
 
+// RequestPixels теперь включает X и Y, чтобы пакет ровно собирался в 25 байт
+// (binary.Write записывает поля без внутренних отступов языка Go)
 type RequestPixels struct {
-	Cmd    uint8
-	Top    int32
-	Right  int32
-	Bottom int32
-	Left   int32
+	Cmd          uint8
+	X            int32
+	Y            int32
+	OffsetTop    int32
+	OffsetBottom int32
+	OffsetLeft   int32
+	OffsetRight  int32
 }
 
 type ResponsePixelHeader struct {
@@ -48,7 +50,7 @@ func NewDaemonClient(socketPath string) *DaemonClient {
 	return &DaemonClient{socketPath: socketPath}
 }
 
-// GetCursorPos получает координаты мыши через команда 0x01
+// GetCursorPos получает координаты мыши через команду 0x01
 func (d *DaemonClient) GetCursorPos() (domain.Point, error) {
 	conn, err := net.Dial("unix", d.socketPath)
 	if err != nil {
@@ -72,20 +74,31 @@ func (d *DaemonClient) GetCursorPos() (domain.Point, error) {
 	return domain.Point{X: int(res.X), Y: int(res.Y)}, nil
 }
 
-// CaptureAreaЗапрашивает пиксели вокруг курсора и сохраняет/возвращает кадр
-func (d *DaemonClient) CaptureArea(top, right, bottom, left int32, outputFile string) (image.Image, error) {
-	conn, err := net.Dial("unix", d.socketPath)
+// CaptureArea реализует интерфейс ScreenCapturer.
+// Принимает context.Context, центр захвата, ширину и высоту.
+func (d *DaemonClient) CaptureArea(ctx context.Context, center domain.Point, width int, height int) (image.Image, error) {
+	// Используем Dialer, чтобы запрос можно было прервать через context
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(ctx, "unix", d.socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка подключения к сокету: %w", err)
 	}
 	defer conn.Close()
 
+	// Вычисляем отступы от центра для передачи демону
+	offsetTop := int32(height / 2)
+	offsetBottom := int32(height) - offsetTop
+	offsetLeft := int32(width / 2)
+	offsetRight := int32(width) - offsetLeft
+
 	reqPixels := RequestPixels{
-		Cmd:    0x02,
-		Top:    top,
-		Right:  right,
-		Bottom: bottom,
-		Left:   left,
+		Cmd:          0x02,
+		X:            int32(center.X),
+		Y:            int32(center.Y),
+		OffsetTop:    offsetTop,
+		OffsetBottom: offsetBottom,
+		OffsetLeft:   offsetLeft,
+		OffsetRight:  offsetRight,
 	}
 
 	if err := binary.Write(conn, binary.LittleEndian, reqPixels); err != nil {
@@ -106,18 +119,10 @@ func (d *DaemonClient) CaptureArea(top, right, bottom, left int32, outputFile st
 		return nil, fmt.Errorf("ошибка чтения массива пикселей: %w", err)
 	}
 
-	img := convertBGRXToImage(pixelBytes, int(header.Width), int(header.Height), int(header.Stride))
-
-	if outputFile != "" {
-		if err := saveImageToJPG(img, outputFile); err != nil {
-			return nil, fmt.Errorf("ошибка сохранения JPG: %w", err)
-		}
-	}
-
-	return img, nil
+	return convertBGRXToImage(pixelBytes, int(header.Width), int(header.Height), int(header.Stride)), nil
 }
 
-// Вспомогательные функции
+// Вспомогательная функция (остается без изменений)
 func convertBGRXToImage(pixels []byte, width, height, stride int) image.Image {
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 
@@ -140,17 +145,4 @@ func convertBGRXToImage(pixels []byte, width, height, stride int) image.Image {
 		}
 	}
 	return img
-}
-
-func saveImageToJPG(img image.Image, filename string) error {
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
-		return err
-	}
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	return jpeg.Encode(file, img, &jpeg.Options{Quality: 95})
 }
