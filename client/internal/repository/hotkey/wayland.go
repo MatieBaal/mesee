@@ -7,7 +7,8 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-// WaylandListener отвечает за получение событий хоткея из D-Bus
+const hardcodedID = "wl_mesee_hotkey" // Захардкоженный ID хоткея для Wayland
+
 type WaylandListener struct {
 	conn *dbus.Conn
 }
@@ -20,46 +21,41 @@ func NewWaylandListener() (*WaylandListener, error) {
 	return &WaylandListener{conn: conn}, nil
 }
 
-// Close закрывает соединение с системной шиной
 func (w *WaylandListener) Close() {
 	if w.conn != nil {
 		w.conn.Close()
 	}
 }
 
-// Listen блокирует поток и ждёт сигналов, пока не будет отменён ctx
 func (w *WaylandListener) Listen(ctx context.Context, onActivate func()) error {
-	// Добавляем правило фильтрации для подписки на сигнал
-	rule := "type='signal',interface='org.freedesktop.portal.GlobalShortcuts',member='Activated'"
+	// Слушаем НАШ кастомный сигнал вместо сложного XDG Portal
+	rule := "type='signal',interface='com.mesee.hotkey',member='Activated'"
 	call := w.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, rule)
 	if call.Err != nil {
 		return fmt.Errorf("failed to add dbus match: %w", call.Err)
 	}
 
-	// Создаём буферизованный канал для сигналов
 	c := make(chan *dbus.Signal, 10)
 	w.conn.Signal(c)
 
-	fmt.Println("[Wayland] Ожидание сигналов от XDG Portal...")
+	fmt.Printf("[Wayland] Ожидание сигнала '%s' по кастомной шине...\n", hardcodedID)
 
-	// Бесконечный цикл обработки
 	for {
 		select {
-		case <-ctx.Done(): // Поступил сигнал остановки программы
+		case <-ctx.Done():
 			w.conn.RemoveSignal(c)
 			return ctx.Err()
 		case sig := <-c:
-			if sig.Name == "org.freedesktop.portal.GlobalShortcuts.Activated" {
-				// sig.Body обычно содержит [session_handle, shortcut_id, timestamp, options]
-				shortcutID := "unknown"
-				if len(sig.Body) > 1 {
-					shortcutID = fmt.Sprintf("%v", sig.Body[1])
+			if sig.Name == "com.mesee.hotkey.Activated" {
+				// Проверяем, что нам передали строку (наш ID)
+				if len(sig.Body) > 0 {
+					shortcutID := fmt.Sprintf("%v", sig.Body[0])
+
+					if shortcutID == hardcodedID {
+						fmt.Printf("[Wayland] Захардкоженный хоткей '%s' сработал! Запускаем логику.\n", shortcutID)
+						onActivate()
+					}
 				}
-
-				fmt.Printf("[Wayland] Хоткей сработал! ID: %s\n", shortcutID)
-
-				// Вызываем callback, который запустит основную логику
-				onActivate()
 			}
 		}
 	}
