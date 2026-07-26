@@ -154,7 +154,7 @@ func (d *DaemonClient) GetBackendType(ctx context.Context) (uint8, error) {
 		return 0, fmt.Errorf("ошибка подключения к сокету: %w", err)
 	}
 	defer conn.Close()
-	if err := binary.Write(conn, binary.LittleEndian, 0x03); err != nil {
+	if err := binary.Write(conn, binary.LittleEndian, []byte{0x03}); err != nil {
 		return 0, fmt.Errorf("ошибка отправки 0x03: %w", err)
 	}
 	var backendType uint8
