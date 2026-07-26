@@ -146,3 +146,21 @@ func convertBGRXToImage(pixels []byte, width, height, stride int) image.Image {
 	}
 	return img
 }
+
+func (d *DaemonClient) GetBackendType(ctx context.Context) (uint8, error) {
+	var dialer net.Dialer
+	conn, err := dialer.DialContext(ctx, "unix", d.socketPath)
+	if err != nil {
+		return 0, fmt.Errorf("ошибка подключения к сокету: %w", err)
+	}
+	defer conn.Close()
+	if err := binary.Write(conn, binary.LittleEndian, 0x03); err != nil {
+		return 0, fmt.Errorf("ошибка отправки 0x03: %w", err)
+	}
+	var backendType uint8
+	if err := binary.Read(conn, binary.LittleEndian, &backendType); err != nil {
+		return 0, fmt.Errorf("ошибка определения типа графического сервера: %w", err)
+	}
+
+	return backendType, nil
+}

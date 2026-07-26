@@ -25,9 +25,15 @@ WAYLAND_SRCS = $(wildcard daemon/backend/wayland/*.c)
 WAYLAND_OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(WAYLAND_SRCS)) $(WAYLAND_PROTO_OBJS)
 WAYLAND_LIBS = -lwayland-client
 
-.PHONY: all clean
+.PHONY: all x11 wayland daemon clean
 
 all: $(DAEMON_BIN) $(X11_SO) $(WAYLAND_SO)
+
+x11: $(DAEMON_BIN) $(X11_SO)
+
+wayland: $(DAEMON_BIN) $(WAYLAND_SO)
+
+daemon: $(DAEMON_BIN)
 
 $(WAYLAND_GEN_DIR)/%-protocol.c: $(WAYLAND_PROTOCOLS_DIR)/%.xml
 	@mkdir -p $(dir $@)

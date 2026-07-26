@@ -14,7 +14,7 @@ type ScreenCapturer interface {
 
 // Порт для распознавания текста
 type OCREngine interface {
-	RecognizeText(ctx context.Context, img image.Image) (*RecognizedText, error)
+	Recognize(ctx context.Context, img image.Image) ([]RecognizedWord, error)
 }
 
 // Порт для перевода текста
