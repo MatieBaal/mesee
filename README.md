@@ -74,3 +74,10 @@ yay -S mesee-common mesee-backend-wayland
 For X11 Users
 Bash
 yay -S mesee-common mesee-backend-x11
+
+## Install:
+
+Arch Linux
+```
+yay -S mesee-git
+```
