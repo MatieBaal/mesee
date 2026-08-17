@@ -111,8 +111,9 @@ func parseTesseractTSV(r io.Reader) ([]domain.RecognizedWord, error) {
 
 		// Стало:
 		words = append(words, domain.RecognizedWord{
-			Text:   text,
-			Bounds: image.Rect(left, top, left+width, top+height),
+			Text:       text,
+			Bounds:     image.Rect(left, top, left+width, top+height),
+			Confidence: conf,
 		})
 	}
 
